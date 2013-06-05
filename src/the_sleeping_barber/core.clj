@@ -26,7 +26,7 @@
   (some (fn [x] (if (nil? @x) x)) (:waiting-chairs shop)))
 
 (defn waiting-customer [shop]
-  (some (fn [x] (if (not @x) x)) (:waiting-chairs shop)))
+  (some (fn [x] (if @x x)) (:waiting-chairs shop)))
 
 (defn sit-waiting-chair [shop person]
   (dosync

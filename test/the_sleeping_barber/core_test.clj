@@ -34,10 +34,11 @@
     (is (is-barber? barber)))))
 
 (deftest shop-test
-  (testing "The shop starts with a barber sleeping in the barber chair"
+  (testing "The shop starts with a barber sleeping in the barber chair and no one waiting"
     (let [the-barber (make-barber)
           shop (make-shop the-barber 2)]
-    (is (= the-barber (barber-chair shop))) ))
+    (is (= the-barber (barber-chair shop)))
+    (is (nil? (waiting-customer shop))) ))
   (testing "A customer can sit in the barber chair"
     (let [the-barber (make-barber)
           shop (make-shop the-barber 2)
@@ -50,6 +51,9 @@
           customerOne (make-customer :one)
           customerTwo (make-customer :two)]
       (sit-waiting-chair shop customerOne)
+      (await-for 1000 customerOne)
+      (is (some #(= customerOne %) (waiting-chairs shop)))
+      (is (= customerOne @(waiting-customer shop)))
       (sit-waiting-chair shop customerTwo)
       (is (some #(= customerOne %) (waiting-chairs shop)))
       (is (some #(= customerTwo %) (waiting-chairs shop))) )))
