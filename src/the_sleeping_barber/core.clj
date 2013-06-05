@@ -63,10 +63,7 @@
   (not (= :short (:hair-length customer-state))))
 
 (defn hair-scissors [customer-state]
-  (do
-    (println customer-state)
-        
-    (assoc customer-state :hair-length :short)))
+  (assoc customer-state :hair-length :short))
 
 ;; Actions
 
@@ -74,18 +71,16 @@
   (send customer hair-scissors))
 
 (defn tend-customers [barber-state shop]
-  (while
-    (not (is-barber? (barber-chair shop)))
-    (do 
-      (let [customer (barber-chair shop)]
-        (cut-hair customer))
-      (dosync
-        (let [waiting-customer-seat (waiting-customer shop)]
-          (if waiting-customer-seat
-            (let [customer @waiting-customer-seat]
-              (ref-set waiting-customer-seat nil)
-              (sit-barber-chair shop customer))
-            (sit-barber-chair shop (self barber-state)))))))
+    (let [customer (barber-chair shop)]
+      (cut-hair customer))
+    (dosync
+      (let [waiting-customer-seat (waiting-customer shop)]
+        (if waiting-customer-seat
+          (let [customer @waiting-customer-seat]
+            (ref-set waiting-customer-seat nil)
+            (sit-barber-chair shop customer)
+            (send (self barber-state) tend-customers shop))
+          (sit-barber-chair shop (self barber-state)))))
   barber-state)
 
 (defn enter-shop [customer-state shop]
