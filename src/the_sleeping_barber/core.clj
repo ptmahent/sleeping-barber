@@ -64,11 +64,6 @@
 
 ;; Actions
 
-(defn enter-shop [customer-state shop]
-  (if (is-barber? (barber-chair shop))
-    (dosync (sit-barber-chair shop (self customer-state)))
-    (sit-waiting-chair shop (self customer-state)))
-  customer-state)
 
 (defn cut-hair [barber-state customer]
   (send customer hair-scissors)
@@ -82,3 +77,17 @@
           (ref-set waiting-customer-seat nil)
           (sit-barber-chair shop customer))
         (sit-barber-chair shop (self barber-state))))))
+
+(defn tend-customers [barber-state shop]
+  barber-state)
+
+(defn enter-shop [customer-state shop]
+  (dosync
+    (let [maybe-barber (barber-chair shop)]
+      (if (is-barber? maybe-barber)
+        (do 
+          (send maybe-barber tend-customers shop)
+          (sit-barber-chair shop (self customer-state)))
+        (sit-waiting-chair shop (self customer-state)))))
+  customer-state)
+
