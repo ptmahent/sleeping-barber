@@ -12,6 +12,9 @@
   (reset! (:self person-state) new-self)
   person-state)
 
+(defn id [maybe-customer] 
+  (when maybe-customer (:id @maybe-customer)))
+
 ;; Shop 
 (defn make-shop-with [sitting-in-barber-chair waiting-people]
    {:barber-chair (ref sitting-in-barber-chair) :waiting-chairs (map ref waiting-people)})
@@ -32,7 +35,7 @@
   (some (fn [x] (if (nil? @x) x)) (:waiting-chairs shop)))
 
 (defn waiting-customer [shop]
-  (some (fn [x] (if @x x)) (:waiting-chairs shop)))
+  (some (fn [x] (if @x x)) (sort-by id (:waiting-chairs shop))))
 
 (defn sit-waiting-chair [shop person]
   (dosync
@@ -72,6 +75,7 @@
 ;; Actions
 
 (defn cut-hair [customer]
+  (Thread/sleep 80)
   (send customer hair-scissors))
 
 (defn tend-customers [barber-state shop]
@@ -87,8 +91,10 @@
           (sit-barber-chair shop (self barber-state)))))
   barber-state)
 
+
 (defn enter-shop [customer-state shop]
   (dosync
+    (println (:id customer-state) (id (barber-chair shop)) (map id (waiting-chairs shop)))
     (let [maybe-barber (barber-chair shop)]
       (if (is-barber? maybe-barber)
         (do 
@@ -99,5 +105,34 @@
           (do 
             (sit-waiting-chair shop (self customer-state))
             customer-state)
-          (assoc customer-state :left-shop true))))))
+          (do
+            (println (str (:id customer-state) " leaving shop with long hair" ))
+            (assoc customer-state :left-shop true)))))))
 
+(def customer-counter (atom 0))
+
+(def open-for-business? (atom true))
+
+(defn open-shop [duration]
+  (do (Thread/sleep duration) (swap! open-for-business? not)))
+
+(def the-barber (make-barber)) 
+(def the-shop (make-shop the-barber 4)) 
+ 
+(defn generate-customers []
+  (future
+    (while @open-for-business?
+      (let [customer (make-customer (swap! customer-counter inc))]
+        ; (println (str "new customer" (:id @customer)))
+        (Thread/sleep 20)
+        (send customer enter-shop the-shop)))))
+
+(defn -main [& args]
+  (generate-customers)
+ 
+  (println "Open barber shop for 10 secs")
+  (open-shop 1000)
+  
+  (shutdown-agents))
+
+  

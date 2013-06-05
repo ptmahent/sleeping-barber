@@ -119,3 +119,4 @@
       (is (= [nil nil] (waiting-chairs shop)))
       (are [customer] (not (shaggy @customer))
         customerOne customerTwo customerThree))))
+
