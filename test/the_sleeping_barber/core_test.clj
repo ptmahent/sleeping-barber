@@ -1,10 +1,8 @@
 (ns the-sleeping-barber.core-test
   (:require [clojure.test :refer :all]
-            [clojure.stacktrace :refer :all]
             [the-sleeping-barber.core :refer :all]))
 
-; Getting a stack trace....
-; (print-stack-trace (agent-error barber))
+
 
 ; Limit the depth of printing, because we have circular data structures 
 (set! *print-level* 5) 
@@ -18,7 +16,7 @@
 (deftest customer-test
   (testing "customers can be sent to"
     (let [customer (make-customer :one)]
-      (is (= customer (send customer (fn []))))))
+      (is (= customer (send customer (fn [customer-state]))))))
   (testing "Initial customer state is shaggy"
     (let [customer (make-customer :one)]
       (is (shaggy @customer))))
@@ -32,7 +30,7 @@
 (deftest barber-test
   (testing "barber can be sent to"
     (let [barber (make-barber)]
-    (is (= barber (send barber (fn []))))))
+    (is (= barber (send barber (fn [barber-state]))))))
   (testing "a barber is a barber"
     (let [barber (make-barber)]
     (is (is-barber? barber)))))
@@ -89,29 +87,24 @@
 
 (deftest cut-hair-test
   (testing "When the barber cuts hair a customers hair, they aren't shaggy"
-    (let [barber (make-barber)
-          customer (make-customer :one)]
+    (let [customer (make-customer :one)]
     (is (shaggy @customer))
-    (send barber cut-hair customer)
-    (await-for 1000 barber customer)
+    (cut-hair customer)
+    (await-for 1000 customer)
     (is (not (shaggy @customer))))))
 
-(deftest seat-waiting-customer-or-sleep-test
-  (testing "When the barber seats a customer the customer leaves their 
-            waiting seat and goes to the barber seat"
+(deftest tend-customers-test
+  (testing "The barber cuts hair until the shop is empty"
     (let [barber (make-barber)
-          customer (make-customer :one)
-          shop (make-shop-with nil [customer])]
-      (is (= customer @(waiting-customer shop)))
-      (send barber seat-waiting-customer-or-sleep shop)
-      (await-for 1000 barber)
-      (is (nil? (waiting-customer shop)))
-      (is (= customer (barber-chair shop))) ))
-  (testing "When there are no customers left barber goes to sleep in their chair"
-    (let [barber (make-barber)
-          shop (make-shop-with nil [nil])]
-      (send barber seat-waiting-customer-or-sleep shop)
-      (await-for 1000 barber)
-      (is (= barber (barber-chair shop))) )))
-
-
+            customerOne (make-customer :one)
+            customerTwo (make-customer :two)
+            customerThree (make-customer :three)
+            shop (make-shop-with customerOne [customerTwo customerThree])
+          ]
+      (send barber tend-customers shop)
+      
+      (await-for 1000 barber customerOne customerTwo customerThree) 
+      (is (= barber (barber-chair shop)))
+      (is (= [nil nil] (waiting-chairs shop)))
+      (are [customer] (not (shaggy @customer))
+        customerOne customerTwo customerThree))))

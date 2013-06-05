@@ -1,4 +1,5 @@
-(ns the-sleeping-barber.core)
+(ns the-sleeping-barber.core
+   (:require [clojure.stacktrace :refer :all]))
 
 ;; Person
 (defn make-person [state]
@@ -41,6 +42,7 @@
 
 (defn make-barber []
   (let [barber (agent (make-person {:id :barber}))]
+    (set-error-handler! barber (fn [agent exception] (print-cause-trace exception)))
     (send barber set-self barber)
     (await barber)
     barber))
@@ -52,33 +54,38 @@
 
 (defn make-customer [id]
   (let [customer (agent (make-person {:type :customer :id id :hair-length :long}))]
+    (set-error-handler! customer (fn [agent exception] (print-cause-trace exception)))
     (send customer set-self customer)
     (await customer)
     customer))
 
 (defn shaggy [customer-state]
-  (= :long (:hair-length customer-state)))
+  (not (= :short (:hair-length customer-state))))
 
 (defn hair-scissors [customer-state]
-  (assoc customer-state :hair-length :short))
+  (do
+    (println customer-state)
+        
+    (assoc customer-state :hair-length :short)))
 
 ;; Actions
 
-
-(defn cut-hair [barber-state customer]
-  (send customer hair-scissors)
-  barber-state)
-
-(defn seat-waiting-customer-or-sleep [barber-state shop]
-  (dosync
-    (let [waiting-customer-seat (waiting-customer shop)]
-      (if waiting-customer-seat
-        (let [customer @waiting-customer-seat]
-          (ref-set waiting-customer-seat nil)
-          (sit-barber-chair shop customer))
-        (sit-barber-chair shop (self barber-state))))))
+(defn cut-hair [customer]
+  (send customer hair-scissors))
 
 (defn tend-customers [barber-state shop]
+  (while
+    (not (is-barber? (barber-chair shop)))
+    (do 
+      (let [customer (barber-chair shop)]
+        (cut-hair customer))
+      (dosync
+        (let [waiting-customer-seat (waiting-customer shop)]
+          (if waiting-customer-seat
+            (let [customer @waiting-customer-seat]
+              (ref-set waiting-customer-seat nil)
+              (sit-barber-chair shop customer))
+            (sit-barber-chair shop (self barber-state)))))))
   barber-state)
 
 (defn enter-shop [customer-state shop]
