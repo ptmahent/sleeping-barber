@@ -56,6 +56,7 @@
   (let [customer (agent (make-person {:type :customer :id id :hair-length :long}))]
     (set-error-handler! customer (fn [agent exception] (print-cause-trace exception)))
     (send customer set-self customer)
+    
     (await customer)
     customer))
 
@@ -64,6 +65,9 @@
 
 (defn hair-scissors [customer-state]
   (assoc customer-state :hair-length :short))
+
+(defn left-shop [customer-state]
+  (:left-shop customer-state))
 
 ;; Actions
 
@@ -89,7 +93,11 @@
       (if (is-barber? maybe-barber)
         (do 
           (send maybe-barber tend-customers shop)
-          (sit-barber-chair shop (self customer-state)))
-        (sit-waiting-chair shop (self customer-state)))))
-  customer-state)
+          (sit-barber-chair shop (self customer-state))
+          customer-state)
+        (if (first-empty-waiting-chair shop)
+          (do 
+            (sit-waiting-chair shop (self customer-state))
+            customer-state)
+          (assoc customer-state :left-shop true))))))
 

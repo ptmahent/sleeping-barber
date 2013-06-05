@@ -64,7 +64,7 @@
       (is (some #(= customerTwo %) (waiting-chairs shop))) )))
 
 (deftest enter-shop-test
-    (testing "When a customer enters a shop with a sleeping barber chair the 
+    (testing "When a customer enters a shop with a sleeping barber the 
               customer wakes the barber and sits in the barber chair"
         (let [barber (make-barber)
               shop (make-shop barber 2)
@@ -75,7 +75,7 @@
             (await-for 1000 customer barber)
             (is @barber-woken)
             (is (= customer (barber-chair shop))))))
-    (testing "When another customer is in the chair a customer sits on a waiting chair"
+    (testing "When another customer is in the barber chair a customer sits on a waiting chair"
       (let [barber (make-barber)
             customerOne (make-customer :one)
             shop (make-shop-with customerOne [nil])
@@ -83,7 +83,18 @@
         (send customerTwo enter-shop shop)
         (await-for 1000 customerTwo)
         (is (= customerOne (barber-chair shop)))
-        (is (some #(= customerTwo %) (waiting-chairs shop))))))
+        (is (some #(= customerTwo %) (waiting-chairs shop)))))
+    (testing "When another customer is in the barber chair and there are no waiting chairs, the customer leaves the shop"
+      (let [barber (make-barber)
+            customerOne (make-customer :one)
+            shop (make-shop-with customerOne [])
+            customerTwo (make-customer :two)]
+        (with-redefs [tend-customers (fn [barber-state shop] ) ]
+          (send customerTwo enter-shop shop)
+          (await-for 1000 customerTwo)
+          (is (= customerOne (barber-chair shop)))
+          (is (left-shop @customerTwo))))))
+
 
 (deftest cut-hair-test
   (testing "When the barber cuts hair a customers hair, they aren't shaggy"
