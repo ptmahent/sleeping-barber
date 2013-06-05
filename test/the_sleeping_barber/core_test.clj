@@ -2,7 +2,8 @@
   (:require [clojure.test :refer :all]
             [the-sleeping-barber.core :refer :all]))
 
-(set! *print-level* 5)
+; Limit the depth of printing, because we have circular data structures 
+(set! *print-level* 5) 
 
 (deftest self-test 
     (testing "self reads back set-self"  
@@ -41,7 +42,7 @@
           customer (make-customer :one)]
       (sit-barber-chair shop customer)
       (is (= customer (barber-chair shop))) ))
-  (testing "Customer can sit in a waiting chair"
+  (testing "Customers can sit in waiting chairs"
     (let [the-barber (make-barber)
           shop (make-shop the-barber 2)
           customerOne (make-customer :one)
@@ -57,7 +58,7 @@
           shop (make-shop dummy-barber 2)
           customer (make-customer :one)]
     (send customer enter-shop shop)
-    (await-for 1000 customer)
+    (await 1000 customer)
     (is (= customer (barber-chair shop)))))
   (testing "When another customer is in the chair a customer sits on a waiting chair"
     (let [dummy-barber (agent "dummy-barber")
@@ -65,9 +66,9 @@
           customerOne (make-customer :one)
           customerTwo (make-customer :two)]
     (send customerOne enter-shop shop)
-    (await-for 1000 customerOne)
+    (await customerOne)
     (send customerTwo enter-shop shop)
-    (await-for 1000 customerTwo)
+    (await customerTwo)
     (is (= customerOne (barber-chair shop)))
     (is (some #(= customerTwo %) (waiting-chairs shop))))))
 
