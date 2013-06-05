@@ -10,10 +10,7 @@
 
 ;; Shop 
 (defn make-shop [barber count-chairs]
-   {:barber barber :barber-chair (ref barber) :waiting-chairs (repeatedly count-chairs #(ref nil))})
-
-(defn barber [shop]
-  (:barber shop))
+   {:barber-chair (ref barber) :waiting-chairs (repeatedly count-chairs #(ref nil))})
 
 (defn barber-chair [shop]
   (deref (:barber-chair shop)))
@@ -35,6 +32,14 @@
   (dosync
    (ref-set (first-empty-waiting-chair shop) person)))
 
+;; Barber
+
+(defn make-barber []
+  (agent {:id :barber}))
+
+(defn is-barber? [person]
+  (= :barber (:id @person)))
+
 ;; Customer
 
 (defn initial-customer-state [id]
@@ -52,16 +57,17 @@
 (defn hair-scissors [customer-state]
   (assoc customer-state :hair-length :short))
 
+;; Actions
+
 (defn enter-shop [customer-state shop]
-  (if (= (barber shop) (barber-chair shop))
+  (if (is-barber? (barber-chair shop))
     (sit-barber-chair shop (self customer-state))
-    (sit-waiting-chair shop (self customer-state))))
+    (sit-waiting-chair shop (self customer-state)))
+  customer-state)
+
+(defn cut-hair [barber-state customer]
+  (send customer hair-scissors)
+  barber-state)
 
 
-;; Barber
 
-(defn make-barber []
-  (agent nil))
-
-(defn cut-hair [barber customer]
-  (send customer hair-scissors))

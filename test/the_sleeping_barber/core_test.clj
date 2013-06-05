@@ -28,13 +28,15 @@
 (deftest barber-test
   (testing "barber can be sent to"
     (let [barber (make-barber)]
-    (is (= barber (send barber (fn [])))))))
+    (is (= barber (send barber (fn []))))))
+  (testing "a barber is a barber"
+    (let [barber (make-barber)]
+    (is (is-barber? barber)))))
 
 (deftest shop-test
   (testing "The shop starts with a barber sleeping in the barber chair"
     (let [the-barber (make-barber)
           shop (make-shop the-barber 2)]
-    (is (= the-barber (barber shop)))
     (is (= the-barber (barber-chair shop))) ))
   (testing "A customer can sit in the barber chair"
     (let [the-barber (make-barber)
@@ -54,15 +56,15 @@
 
 (deftest enter-shop-test
   (testing "When a customer enters a shop with a sleeping barber chair the customer sits in the barber chair"
-    (let [dummy-barber (agent "dummy-barber")
-          shop (make-shop dummy-barber 2)
+    (let [barber (make-barber)
+          shop (make-shop barber 2)
           customer (make-customer :one)]
     (send customer enter-shop shop)
     (await-for 1000 customer)
     (is (= customer (barber-chair shop)))))
   (testing "When another customer is in the chair a customer sits on a waiting chair"
-    (let [dummy-barber (agent "dummy-barber")
-          shop (make-shop dummy-barber 2)
+    (let [barber (make-barber)
+          shop (make-shop barber 2)
           customerOne (make-customer :one)
           customerTwo (make-customer :two)]
     (send customerOne enter-shop shop)
