@@ -24,3 +24,11 @@
     (let [barber (make-barber)]
     (is (sleeping (initial-barber-state))))))
 
+(deftest shop-test
+  (testing "The shop starts with a barber sleeping in the barber chair"
+    (let [barber (make-barber)
+          shop (make-shop barber)]
+    (is (= barber (barber-chair shop))))))
+
+
+
