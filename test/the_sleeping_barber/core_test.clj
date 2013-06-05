@@ -2,27 +2,32 @@
   (:require [clojure.test :refer :all]
             [the-sleeping-barber.core :refer :all]))
 
+(set! *print-level* 5)
+
+(deftest self-test 
+    (testing "self reads back set-self"  
+    (let [customer-state (initial-customer-state)]
+      (set-self customer-state :new-self)
+      (is (= :new-self (self customer-state))))))
+
 (deftest customer-test
   (testing "customers can be sent to"
     (let [customer (make-customer)]
-    (is (= customer (send customer (fn []))))))
-  (testing "A customer that hasn't been sent to starts in the initial state"
-    (let [customer (make-customer)]
-    (is (= (initial-customer-state) (deref customer)))))
+      (is (= customer (send customer (fn []))))))
   (testing "Initial customer state is shaggy"
     (let [customer (make-customer)]
-    (is (shaggy (initial-customer-state))))))
+      (is (shaggy @customer))))
+  (testing "A customer's state has access to the customer using self"  
+    (let [customer (make-customer)]
+      (is (= customer (self @customer))))))
 
 (deftest barber-test
   (testing "barber can be sent to"
     (let [barber (make-barber)]
     (is (= barber (send barber (fn []))))))
-  (testing "A barber that hasn't been sent to starts in the initial state"
-    (let [barber (make-barber)]
-    (is (= (initial-barber-state) (deref barber)))))
   (testing "Initial barber state is sleeping"
     (let [barber (make-barber)]
-    (is (sleeping (initial-barber-state))))))
+    (is (sleeping @barber)))))
 
 (deftest shop-test
   (testing "The shop starts with a barber sleeping in the barber chair"
@@ -30,5 +35,13 @@
           shop (make-shop barber)]
     (is (= barber (barber-chair shop))))))
 
-
+(deftest enter-shop-test
+  (testing "When a customer enters a shop with a sleeping barber chair the customer sits in the barber chair"
+    (let [dummy-barber (agent "dummy-barber")
+          shop (make-shop dummy-barber)
+          customer (make-customer)]
+      
+    (send customer enter-shop shop)
+    (await customer)
+    (is (= customer (barber-chair shop))))))
 
