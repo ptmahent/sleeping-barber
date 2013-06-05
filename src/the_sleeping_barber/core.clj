@@ -1,6 +1,10 @@
 (ns the-sleeping-barber.core)
 
-(defn foo
-  "I don't do a whole lot."
-  [x]
-  (println x "Hello, World!"))
+(defn initial-customer-state []
+  nil)
+
+(defn make-customer []
+  (agent nil))
+
+(defn shaggy [customer]
+  true)

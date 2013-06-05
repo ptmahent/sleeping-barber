@@ -2,6 +2,14 @@
   (:require [clojure.test :refer :all]
             [the-sleeping-barber.core :refer :all]))
 
-(deftest a-test
-  (testing "FIXME, I fail."
-    (is (= 0 1))))
+(deftest customer-test
+  (testing "customers can be sent to"
+    (let [customer (make-customer)]
+    (is (= customer (send customer (fn []))))))
+  (testing "A customer that hasn't been sent to starts in the initial state"
+    (let [customer (make-customer)]
+    (is (= (initial-customer-state) (deref customer)))))
+  (testing "Initial customer state is shaggy"
+    (let [customer (make-customer)]
+    (is (shaggy (initial-customer-state))))))
+
