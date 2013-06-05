@@ -18,6 +18,9 @@
   (testing "Initial customer state is shaggy"
     (let [customer (make-customer :one)]
       (is (shaggy @customer))))
+  (testing "Hair scissors remove shaggyness from customer state"
+    (let [customer (make-customer :one)]
+      (is (not (shaggy (hair-scissors @customer))))))
   (testing "A customer's state has access to the customer using self"  
     (let [customer (make-customer :one)]
       (is (= customer (self @customer))))))
@@ -25,10 +28,7 @@
 (deftest barber-test
   (testing "barber can be sent to"
     (let [barber (make-barber)]
-    (is (= barber (send barber (fn []))))))
-  (testing "Initial barber state is sleeping"
-    (let [barber (make-barber)]
-    (is (sleeping @barber)))))
+    (is (= barber (send barber (fn [])))))))
 
 (deftest shop-test
   (testing "The shop starts with a barber sleeping in the barber chair"
@@ -58,7 +58,7 @@
           shop (make-shop dummy-barber 2)
           customer (make-customer :one)]
     (send customer enter-shop shop)
-    (await 1000 customer)
+    (await-for 1000 customer)
     (is (= customer (barber-chair shop)))))
   (testing "When another customer is in the chair a customer sits on a waiting chair"
     (let [dummy-barber (agent "dummy-barber")
@@ -66,9 +66,18 @@
           customerOne (make-customer :one)
           customerTwo (make-customer :two)]
     (send customerOne enter-shop shop)
-    (await customerOne)
+    (await-for 1000 customerOne)
     (send customerTwo enter-shop shop)
-    (await customerTwo)
+    (await-for 1000 customerTwo)
     (is (= customerOne (barber-chair shop)))
     (is (some #(= customerTwo %) (waiting-chairs shop))))))
+
+(deftest cut-hair-test
+  (testing "When the barber cuts hair a customers hair, they aren't shaggy"
+    (let [barber (make-barber)
+          customer (make-customer :one)]
+    (is (shaggy @customer))
+    (send barber cut-hair customer)
+    (await-for 1000 barber customer)
+    (is (not (shaggy @customer))))))
 

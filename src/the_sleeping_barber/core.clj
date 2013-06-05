@@ -28,6 +28,9 @@
 (defn first-empty-waiting-chair [shop]
   (some (fn [x] (if (nil? @x) x)) (:waiting-chairs shop)))
 
+(defn waiting-customer [shop]
+  (some (fn [x] (if (not @x) x)) (:waiting-chairs shop)))
+
 (defn sit-waiting-chair [shop person]
   (dosync
    (ref-set (first-empty-waiting-chair shop) person)))
@@ -35,7 +38,7 @@
 ;; Customer
 
 (defn initial-customer-state [id]
-  {:type :customer :id id :self (atom :soulless)})
+  {:type :customer :id id :hair-length :long :self (atom :soulless)})
 
 (defn make-customer [id]
   (let [customer (agent (initial-customer-state id))]
@@ -43,22 +46,22 @@
     (await customer)
     customer))
 
-(defn shaggy [customer]
-  true)
+(defn shaggy [customer-state]
+  (= :long (:hair-length customer-state)))
+
+(defn hair-scissors [customer-state]
+  (assoc customer-state :hair-length :short))
 
 (defn enter-shop [customer-state shop]
   (if (= (barber shop) (barber-chair shop))
     (sit-barber-chair shop (self customer-state))
     (sit-waiting-chair shop (self customer-state))))
 
-;; Barber
 
-(defn initial-barber-state []
-  nil)
+;; Barber
 
 (defn make-barber []
   (agent nil))
 
-(defn sleeping [barber]
-  true)
-
+(defn cut-hair [barber customer]
+  (send customer hair-scissors))
