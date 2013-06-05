@@ -32,27 +32,42 @@
 (deftest shop-test
   (testing "The shop starts with a barber sleeping in the barber chair"
     (let [the-barber (make-barber)
-          shop (make-shop the-barber)]
+          shop (make-shop the-barber 2)]
     (is (= the-barber (barber shop)))
-    (is (= the-barber (barber-chair shop))) )))
+    (is (= the-barber (barber-chair shop))) ))
+  (testing "A customer can sit in the barber chair"
+    (let [the-barber (make-barber)
+          shop (make-shop the-barber 2)
+          customer (make-customer :one)]
+      (sit-barber-chair shop customer)
+      (is (= customer (barber-chair shop))) ))
+  (testing "Customer can sit in a waiting chair"
+    (let [the-barber (make-barber)
+          shop (make-shop the-barber 2)
+          customerOne (make-customer :one)
+          customerTwo (make-customer :two)]
+      (sit-waiting-chair shop customerOne)
+      (sit-waiting-chair shop customerTwo)
+      (is (some #(= customerOne %) (waiting-chairs shop)))
+      (is (some #(= customerTwo %) (waiting-chairs shop))) )))
 
 (deftest enter-shop-test
   (testing "When a customer enters a shop with a sleeping barber chair the customer sits in the barber chair"
     (let [dummy-barber (agent "dummy-barber")
-          shop (make-shop dummy-barber)
+          shop (make-shop dummy-barber 2)
           customer (make-customer :one)]
     (send customer enter-shop shop)
-    (await customer)
+    (await-for 1000 customer)
     (is (= customer (barber-chair shop)))))
   (testing "When another customer is in the chair a customer sits on a waiting chair"
     (let [dummy-barber (agent "dummy-barber")
-          shop (make-shop dummy-barber)
+          shop (make-shop dummy-barber 2)
           customerOne (make-customer :one)
           customerTwo (make-customer :two)]
     (send customerOne enter-shop shop)
-    (await customerOne)
+    (await-for 1000 customerOne)
     (send customerTwo enter-shop shop)
-    (await customerTwo)
+    (await-for 1000 customerTwo)
     (is (= customerOne (barber-chair shop)))
     (is (some #(= customerTwo %) (waiting-chairs shop))))))
 

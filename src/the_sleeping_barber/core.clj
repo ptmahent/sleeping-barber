@@ -9,27 +9,28 @@
   person-state)
 
 ;; Shop 
-(defn make-shop [barber]
-   {:barber barber :barber-chair (ref barber) :waiting-chairs [(ref nil)]})
-
-(defn barber-chair [shop]
-  (deref (:barber-chair shop)))
+(defn make-shop [barber count-chairs]
+   {:barber barber :barber-chair (ref barber) :waiting-chairs (repeatedly count-chairs #(ref nil))})
 
 (defn barber [shop]
   (:barber shop))
 
-(defn waiting-chairs [shop]
-  (map deref (:waiting-chairs shop)))
+(defn barber-chair [shop]
+  (deref (:barber-chair shop)))
 
 (defn sit-barber-chair [shop person]
   (dosync
-   (ref-set (:barber-chair shop) (self person))))
+   (ref-set (:barber-chair shop) person)))
+
+(defn waiting-chairs [shop]
+  (map deref (:waiting-chairs shop)))
+
+(defn first-empty-waiting-chair [shop]
+  (some (fn [x] (if (nil? @x) x)) (:waiting-chairs shop)))
 
 (defn sit-waiting-chair [shop person]
   (dosync
-   (ref-set (first (:waiting-chairs shop)) (self person))))
-
-
+   (ref-set (first-empty-waiting-chair shop) person)))
 
 ;; Customer
 
@@ -45,10 +46,10 @@
 (defn shaggy [customer]
   true)
 
-(defn enter-shop [customer shop]
+(defn enter-shop [customer-state shop]
   (if (= (barber shop) (barber-chair shop))
-    (sit-barber-chair shop customer)
-    (sit-waiting-chair shop customer)))
+    (sit-barber-chair shop (self customer-state))
+    (sit-waiting-chair shop (self customer-state))))
 
 ;; Barber
 
