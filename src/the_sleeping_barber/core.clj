@@ -1,6 +1,9 @@
 (ns the-sleeping-barber.core)
 
 ;; Person
+(defn make-person [state]
+  (assoc state :self (atom :soulless)))
+
 (defn self [person-state] 
   @(:self person-state))
 
@@ -9,15 +12,17 @@
   person-state)
 
 ;; Shop 
+(defn make-shop-with [sitting-in-barber-chair waiting-people]
+   {:barber-chair (ref sitting-in-barber-chair) :waiting-chairs (map ref waiting-people)})
+
 (defn make-shop [barber count-chairs]
-   {:barber-chair (ref barber) :waiting-chairs (repeatedly count-chairs #(ref nil))})
+   (make-shop-with barber (repeat  count-chairs nil)))
 
 (defn barber-chair [shop]
   (deref (:barber-chair shop)))
 
 (defn sit-barber-chair [shop person]
-  (dosync
-   (ref-set (:barber-chair shop) person)))
+  (ref-set (:barber-chair shop) person))
 
 (defn waiting-chairs [shop]
   (map deref (:waiting-chairs shop)))
@@ -35,18 +40,18 @@
 ;; Barber
 
 (defn make-barber []
-  (agent {:id :barber}))
-
+  (let [barber (agent (make-person {:id :barber}))]
+    (send barber set-self barber)
+    (await barber)
+    barber))
+  
 (defn is-barber? [person]
   (= :barber (:id @person)))
 
 ;; Customer
 
-(defn initial-customer-state [id]
-  {:type :customer :id id :hair-length :long :self (atom :soulless)})
-
 (defn make-customer [id]
-  (let [customer (agent (initial-customer-state id))]
+  (let [customer (agent (make-person {:type :customer :id id :hair-length :long}))]
     (send customer set-self customer)
     (await customer)
     customer))
@@ -61,7 +66,7 @@
 
 (defn enter-shop [customer-state shop]
   (if (is-barber? (barber-chair shop))
-    (sit-barber-chair shop (self customer-state))
+    (dosync (sit-barber-chair shop (self customer-state)))
     (sit-waiting-chair shop (self customer-state)))
   customer-state)
 
@@ -69,5 +74,11 @@
   (send customer hair-scissors)
   barber-state)
 
-
-
+(defn seat-waiting-customer-or-sleep [barber-state shop]
+  (dosync
+    (let [waiting-customer-seat (waiting-customer shop)]
+      (if waiting-customer-seat
+        (let [customer @waiting-customer-seat]
+          (ref-set waiting-customer-seat nil)
+          (sit-barber-chair shop customer))
+        (sit-barber-chair shop (self barber-state))))))
