@@ -8,3 +8,13 @@
 
 (defn shaggy [customer]
   true)
+
+(defn initial-barber-state []
+  nil)
+
+(defn make-barber []
+  (agent nil))
+
+(defn sleeping [barber]
+  true)
+

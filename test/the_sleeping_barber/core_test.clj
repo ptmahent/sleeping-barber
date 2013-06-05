@@ -13,3 +13,14 @@
     (let [customer (make-customer)]
     (is (shaggy (initial-customer-state))))))
 
+(deftest barber-test
+  (testing "barber can be sent to"
+    (let [barber (make-barber)]
+    (is (= barber (send barber (fn []))))))
+  (testing "A barber that hasn't been sent to starts in the initial state"
+    (let [barber (make-barber)]
+    (is (= (initial-barber-state) (deref barber)))))
+  (testing "Initial barber state is sleeping"
+    (let [barber (make-barber)]
+    (is (sleeping (initial-barber-state))))))
+
